@@ -74,10 +74,11 @@ module Filedepot
       end
 
       def url(handle, version, filename)
-        base = @source["public_base_path"].to_s.sub(%r{/$}, "")
+        base = @source["public_base_path"].to_s.sub(%r{/+$}, "")
         return nil if base.empty? || filename.nil? || filename.empty?
 
-        [base, handle, version, filename].join("/").gsub(%r{/+}, "/")
+        path = [handle, version, filename].join("/")
+        "#{base}/#{path}"
       end
 
       protected
