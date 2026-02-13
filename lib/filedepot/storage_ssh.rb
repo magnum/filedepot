@@ -93,16 +93,29 @@ module Filedepot
         end
       end
 
-      def versions(handle)
+      def versions_data(handle)
         ssh_session do |ssh|
           versions_list = versions_for(ssh, handle).sort.reverse
           versions_list.map do |v|
             version_dir = File.join(remote_handle_path(handle), v.to_s)
             epoch = stat_mtime(ssh, version_dir)
-            date_str = epoch ? Time.at(epoch).to_s : ""
-            [v, date_str]
+            remote_file = first_file_in_dir(ssh, version_dir)
+            path = remote_file || version_dir
+            filename = remote_file ? File.basename(remote_file) : nil
+            {
+              version: v,
+              datetime: epoch ? Time.at(epoch) : nil,
+              path: path,
+              handle: handle,
+              filename: filename,
+              url: url(handle, v, filename)
+            }
           end
         end
+      end
+
+      def versions(handle)
+        versions_data(handle).map { |d| [d[:version], d[:datetime] ? d[:datetime].to_s : ""] }
       end
 
       def delete(handle, version = nil)

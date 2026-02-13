@@ -52,8 +52,32 @@ module Filedepot
         raise "not implemented"
       end
 
+      def versions_data(handle)
+        raise "not implemented"
+      end
+
       def delete(handle, version = nil)
         raise "not implemented"
+      end
+
+      def info(handle)
+        data = versions_data(handle)
+        latest = data.first
+        result = {
+          handle: handle,
+          remote_base_path: remote_base_path,
+          current_version: current_version(handle)
+        }
+        result[:updated_at] = latest[:datetime] if latest
+        result[:latest_version_url] = latest[:url] if latest && latest[:url]
+        result
+      end
+
+      def url(handle, version, filename)
+        base = @source["public_base_path"].to_s.sub(%r{/$}, "")
+        return nil if base.empty? || filename.nil? || filename.empty?
+
+        [base, handle, version, filename].join("/").gsub(%r{/+}, "/")
       end
 
       protected

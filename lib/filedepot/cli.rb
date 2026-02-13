@@ -35,19 +35,9 @@ module Filedepot
           filedepot pull test --version 2
           filedepot pull test --version 2 --path ./test/file.txt
       HELP
-      versions: <<~HELP,
-        Usage:
-          filedepot versions HANDLE
-
-        List all versions of a handle. Each version has an integer ID from 1 to n.
-      HELP
-      delete: <<~HELP
-        Usage:
-          filedepot delete HANDLE [VERSION]
-
-        After confirmation, deletes all versions of a file.
-        If VERSION is specified, deletes only that specific version.
-      HELP
+      versions: "Usage: filedepot versions HANDLE\n\nList all versions of a handle. Each version has an integer ID from 1 to n.",
+      delete: "Usage: filedepot delete HANDLE [VERSION]\n\nAfter confirmation, deletes all versions of a file.\nIf VERSION is specified, deletes only that specific version.",
+      info: "Usage: filedepot info HANDLE\n\nShow info for a handle: remote base path and current version."
     }.freeze
 
     desc "config", "Open the config file using $EDITOR"
@@ -68,7 +58,10 @@ module Filedepot
 
       storage = Storage::Base.for(source)
       storage.push(handle, file_path)
-      puts "Pushed #{file_path} as #{handle} (version #{storage.current_version(handle)})"
+      version = storage.current_version(handle)
+      puts "Pushed #{file_path} as #{handle} (version #{version})"
+      uploaded_url = storage.url(handle, version, File.basename(file_path))
+      puts uploaded_url if uploaded_url
     end
 
     desc "pull HANDLE", "Get file from storage"
@@ -93,6 +86,8 @@ module Filedepot
       info = storage.pull_info(handle, version, local_path)
       target_path = info[:target_path]
 
+      puts "Pulling #{handle} (version #{info[:version_num]})"
+
       parent_dir = File.dirname(target_path)
       unless parent_dir == "." || File.directory?(parent_dir)
         return unless confirm?("create local directory #{parent_dir}, y/n?")
@@ -104,7 +99,7 @@ module Filedepot
       end
 
       storage.pull(handle, version, target_path)
-      puts "Pulled #{handle} (version #{info[:version_num]}) to #{target_path}"
+      puts "pulled to #{target_path}"
     end
 
     desc "versions HANDLE", "List all versions of a handle (each version has an integer from 1 to n)"
@@ -133,6 +128,29 @@ module Filedepot
           puts "... and #{remaining} other ones for a total of #{versions_list.size} versions"
         end
       end
+    end
+
+    desc "info HANDLE", "Show info for a handle"
+    def info(handle = nil)
+      if handle.nil?
+        puts COMMAND_HELP[:info]
+        return
+      end
+
+      source = Config.current_source
+      if source.nil?
+        puts "Error: No storage source configured. Run 'filedepot config' to set up."
+        return
+      end
+
+      storage = Storage::Base.for(source)
+      data = storage.info(handle)
+
+      puts "handle: #{data[:handle]}"
+      puts "remote_base_path: #{data[:remote_base_path]}"
+      puts "current version: #{data[:current_version]}"
+      puts "updated at: #{data[:updated_at]}" if data[:updated_at]
+      puts "latest version url: #{data[:latest_version_url]}" if data[:latest_version_url]
     end
 
     desc "delete HANDLE [VERSION]", "After confirmation, delete all versions of a file; or only a specific version if specified"
@@ -166,6 +184,7 @@ module Filedepot
       puts "  filedepot push HANDLE FILE    Send file to current storage"
       puts "  filedepot pull HANDLE [--path PATH] [--version N]  Get file from storage"
       puts "  filedepot versions HANDLE     List all versions of a handle"
+      puts "  filedepot info HANDLE         Show info for a handle"
       puts "  filedepot delete HANDLE [VER] Delete file(s) after confirmation"
       puts ""
       puts "Use 'filedepot help COMMAND' for more information on a command."

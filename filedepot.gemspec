@@ -27,4 +27,7 @@ Gem::Specification.new do |spec|
   spec.add_runtime_dependency "net-scp", "~> 4.0"
   spec.add_runtime_dependency "net-ssh", "~> 7.0"
   spec.add_runtime_dependency "thor", "~> 1.3"
+
+  spec.add_development_dependency "minitest", "~> 5.0"
+  spec.add_development_dependency "rake", "~> 13.0"
 end

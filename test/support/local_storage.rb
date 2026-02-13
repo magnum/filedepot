@@ -1,0 +1,132 @@
+# frozen_string_literal: true
+
+# Local filesystem storage for testing - mirrors SshStorage structure
+# without requiring SSH. Uses base_path/handle/1/, base_path/handle/2/, etc.
+module Filedepot
+  module Storage
+    class LocalStorage < Base
+      def test
+        FileUtils.mkdir_p(remote_base_path)
+      end
+
+      def ls
+        return [] unless Dir.exist?(remote_base_path)
+
+        Dir.children(remote_base_path).select { |c| File.directory?(File.join(remote_base_path, c)) }
+      end
+
+      def push(handle, local_path)
+        path = File.expand_path(local_path)
+        raise "File not found: #{local_path}" unless File.file?(path)
+
+        push_path = next_version_path(handle)
+        FileUtils.mkdir_p(push_path)
+        FileUtils.cp(path, File.join(push_path, File.basename(path)))
+      end
+
+      def pull(handle, version = nil, local_path = nil)
+        versions_list = versions_for(handle)
+        raise "No versions found for handle: #{handle}" if versions_list.empty?
+
+        version_num = version ? version.to_i : versions_list.max
+        raise "Version #{version} not found" unless versions_list.include?(version_num)
+
+        version_dir = File.join(remote_handle_path(handle), version_num.to_s)
+        remote_file = first_file_in_dir(version_dir)
+        raise "No file found in version #{version_num}" if remote_file.nil?
+
+        remote_filename = File.basename(remote_file)
+        target_path = resolve_local_path(local_path, remote_filename)
+        FileUtils.cp(remote_file, target_path)
+        target_path
+      end
+
+      def pull_info(handle, version = nil, local_path = nil)
+        versions_list = versions_for(handle)
+        raise "No versions found for handle: #{handle}" if versions_list.empty?
+
+        version_num = version ? version.to_i : versions_list.max
+        raise "Version #{version} not found" unless versions_list.include?(version_num)
+
+        version_dir = File.join(remote_handle_path(handle), version_num.to_s)
+        remote_file = first_file_in_dir(version_dir)
+        raise "No file found in version #{version_num}" if remote_file.nil?
+
+        remote_filename = File.basename(remote_file)
+        target_path = resolve_local_path(local_path, remote_filename)
+
+        { remote_filename: remote_filename, version_num: version_num, target_path: target_path }
+      end
+
+      def current_version_path(handle)
+        handle_dir = remote_handle_path(handle)
+        FileUtils.mkdir_p(handle_dir)
+
+        versions_list = versions_for(handle)
+        return nil if versions_list.empty?
+
+        File.join(handle_dir, versions_list.max.to_s)
+      end
+
+      def versions_data(handle)
+        versions_list = versions_for(handle).sort.reverse
+        versions_list.map do |v|
+          version_dir = File.join(remote_handle_path(handle), v.to_s)
+          remote_file = first_file_in_dir(version_dir)
+          mtime = remote_file ? File.mtime(remote_file) : nil
+          filename = remote_file ? File.basename(remote_file) : nil
+          {
+            version: v,
+            datetime: mtime,
+            path: remote_file || version_dir,
+            handle: handle,
+            filename: filename,
+            url: url(handle, v, filename)
+          }
+        end
+      end
+
+      def versions(handle)
+        versions_data(handle).map { |d| [d[:version], d[:datetime] ? d[:datetime].to_s : ""] }
+      end
+
+      def delete(handle, version = nil)
+        handle_dir = remote_handle_path(handle)
+
+        if version
+          version_dir = File.join(handle_dir, version.to_s)
+          FileUtils.rm_rf(version_dir)
+          FileUtils.rmdir(handle_dir) if Dir.exist?(handle_dir) && Dir.empty?(handle_dir)
+        else
+          FileUtils.rm_rf(handle_dir)
+        end
+      end
+
+      def resolve_local_path(local_path_param, remote_filename)
+        if local_path_param.nil? || local_path_param.empty?
+          File.join(Dir.pwd, remote_filename)
+        elsif local_path_param.end_with?("/") || (File.exist?(local_path_param) && File.directory?(local_path_param))
+          File.join(File.expand_path(local_path_param), remote_filename)
+        else
+          File.expand_path(local_path_param)
+        end
+      end
+
+      private
+
+      def versions_for(handle)
+        handle_dir = remote_handle_path(handle)
+        return [] unless Dir.exist?(handle_dir)
+
+        Dir.children(handle_dir).map(&:to_i).select { |v| v.positive? }
+      end
+
+      def first_file_in_dir(dir)
+        return nil unless Dir.exist?(dir)
+
+        first = Dir.children(dir).first
+        first ? File.join(dir, first) : nil
+      end
+    end
+  end
+end
