@@ -1,0 +1,11 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+require "filedepot"
+
+# Handle no-args: Thor by default shows help, we want our custom default output
+if ARGV.empty?
+  Filedepot::CLI.new.invoke(:default)
+else
+  Filedepot::CLI.start(ARGV)
+end
