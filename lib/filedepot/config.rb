@@ -36,7 +36,10 @@ module Filedepot
         config = load
         default = config["default_source"]
         sources = config["sources"] || []
-        sources.find { |s| s["name"] == default }
+        return nil if sources.empty?
+
+        source = sources.find { |s| (s["name"] || s[:name]) == default }
+        source || sources.first
       end
     end
   end

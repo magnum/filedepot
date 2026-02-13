@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require "fileutils"
 require "thor"
 
 module Filedepot
@@ -15,16 +16,24 @@ module Filedepot
       HELP
       push: <<~HELP,
         Usage:
-          filedepot push HANDLE
+          filedepot push HANDLE FILE
 
-        Send a file with a specific handle to the current storage.
+        Send a file to the current storage with a specific handle.
+        Example: filedepot push test test.txt
       HELP
       pull: <<~HELP,
         Usage:
-          filedepot pull HANDLE [VERSION]
+          filedepot pull HANDLE [--path PATH] [--version VERSION]
 
-        Get the latest version of file with a specific handle from the current storage.
-        VERSION is optional; if omitted, retrieves the latest version.
+        Get a file from storage. By default gets the latest version and saves to current directory.
+        Options:
+          --path PATH    Save to this local path (e.g. ./test/file.txt)
+          --version N   Get specific version (default: latest)
+        Examples:
+          filedepot pull test
+          filedepot pull test --path ./test/file.txt
+          filedepot pull test --version 2
+          filedepot pull test --version 2 --path ./test/file.txt
       HELP
       versions: <<~HELP,
         Usage:
@@ -49,23 +58,53 @@ module Filedepot
       exec(editor, config_path)
     end
 
-    desc "push HANDLE", "Send a file with a specific handle to the current storage"
-    def push(handle = nil)
-      if handle.nil?
-        puts COMMAND_HELP[:push]
+    desc "push HANDLE FILE", "Send a file to the current storage with a specific handle"
+    def push(handle, file_path)
+      source = Config.current_source
+      if source.nil?
+        puts "Error: No storage source configured. Run 'filedepot config' to set up."
         return
       end
-      puts "push: would send file with handle '#{handle}' to current storage (not implemented)"
+
+      storage = Storage::Base.for(source)
+      storage.push(handle, file_path)
+      puts "Pushed #{file_path} as #{handle} (version #{storage.current_version(handle)})"
     end
 
-    desc "pull HANDLE [VERSION]", "Get the latest version of file with a specific handle from the current storage"
-    def pull(handle = nil, version = nil)
+    desc "pull HANDLE", "Get file from storage"
+    method_option :path, type: :string, desc: "Local path to save the file"
+    method_option :version, type: :string, desc: "Version number to pull (default: latest)"
+    def pull(handle = nil)
       if handle.nil?
         puts COMMAND_HELP[:pull]
         return
       end
-      version_str = version ? " version #{version}" : " latest version"
-      puts "pull: would get file '#{handle}'#{version_str} from current storage (not implemented)"
+
+      source = Config.current_source
+      if source.nil?
+        puts "Error: No storage source configured. Run 'filedepot config' to set up."
+        return
+      end
+
+      local_path = options[:path]
+      version = (options[:version].nil? || options[:version].empty?) ? nil : options[:version].to_i
+
+      storage = Storage::Base.for(source)
+      info = storage.pull_info(handle, version, local_path)
+      target_path = info[:target_path]
+
+      parent_dir = File.dirname(target_path)
+      unless parent_dir == "." || File.directory?(parent_dir)
+        return unless confirm?("create local directory #{parent_dir}, y/n?")
+        FileUtils.mkdir_p(parent_dir)
+      end
+
+      if File.exist?(target_path)
+        return unless confirm?("overwrite local #{target_path}, y/n?")
+      end
+
+      storage.pull(handle, version, target_path)
+      puts "Pulled #{handle} (version #{info[:version_num]}) to #{target_path}"
     end
 
     desc "versions HANDLE", "List all versions of a handle (each version has an integer from 1 to n)"
@@ -74,7 +113,26 @@ module Filedepot
         puts COMMAND_HELP[:versions]
         return
       end
-      puts "versions: would list all versions of handle '#{handle}' (not implemented)"
+
+      source = Config.current_source
+      if source.nil?
+        puts "Error: No storage source configured. Run 'filedepot config' to set up."
+        return
+      end
+
+      storage = Storage::Base.for(source)
+      versions_list = storage.versions(handle)
+      if versions_list.empty?
+        puts "No versions found for handle: #{handle}"
+      else
+        max_display = 10
+        to_show = versions_list.first(max_display)
+        to_show.each { |v, date_str| puts date_str.empty? ? v.to_s : "#{v} - #{date_str}" }
+        if versions_list.size > max_display
+          remaining = versions_list.size - max_display
+          puts "... and #{remaining} other ones for a total of #{versions_list.size} versions"
+        end
+      end
     end
 
     desc "delete HANDLE [VERSION]", "After confirmation, delete all versions of a file; or only a specific version if specified"
@@ -105,8 +163,8 @@ module Filedepot
       puts ""
       puts "Available commands:"
       puts "  filedepot config              Open config file using $EDITOR"
-      puts "  filedepot push HANDLE         Send file to current storage"
-      puts "  filedepot pull HANDLE [VER]   Get file from storage (version optional)"
+      puts "  filedepot push HANDLE FILE    Send file to current storage"
+      puts "  filedepot pull HANDLE [--path PATH] [--version N]  Get file from storage"
       puts "  filedepot versions HANDLE     List all versions of a handle"
       puts "  filedepot delete HANDLE [VER] Delete file(s) after confirmation"
       puts ""
@@ -115,6 +173,17 @@ module Filedepot
 
     def self.exit_on_failure?
       true
+    end
+
+    private
+
+    def confirm?(prompt)
+      print "#{prompt} "
+      input = $stdin.gets&.strip&.downcase
+      input == "y" || input == "yes"
+    rescue Interrupt
+      puts
+      false
     end
   end
 end
