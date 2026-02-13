@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    filedepot (0.2.1)
+    filedepot (0.2.2)
       net-scp (~> 4.0)
       net-ssh (~> 7.0)
       thor (~> 1.3)
