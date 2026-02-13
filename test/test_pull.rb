@@ -60,7 +60,8 @@ class TestPull < Minitest::Test
     error = assert_raises(RuntimeError) do
       @storage.pull("nonexistent")
     end
-    assert_match(/No versions found/, error.message)
+    assert_match(/not found/, error.message)
+    assert_includes error.message, "nonexistent"
   end
 
   def test_pull_raises_when_version_not_found
@@ -72,6 +73,7 @@ class TestPull < Minitest::Test
       @storage.pull("testhandle", 99)
     end
     assert_match(/Version 99 not found/, error.message)
+    assert_includes error.message, "testhandle"
   end
 
   def test_pull_info_returns_correct_target_path

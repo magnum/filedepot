@@ -47,5 +47,6 @@ class TestPush < Minitest::Test
       @storage.push("handle", "/nonexistent/file.txt")
     end
     assert_match(/File not found/, error.message)
+    assert_includes error.message, "/nonexistent/file.txt"
   end
 end

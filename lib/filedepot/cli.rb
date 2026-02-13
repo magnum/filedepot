@@ -50,6 +50,20 @@ module Filedepot
 
     desc "push HANDLE FILE", "Send a file to the current storage with a specific handle"
     def push(handle, file_path)
+      if handle.to_s.strip.empty?
+        puts "Error: Handle is required."
+        return
+      end
+      if file_path.to_s.strip.empty?
+        puts "Error: File path is required."
+        return
+      end
+      path = File.expand_path(file_path)
+      unless File.file?(path)
+        puts "Error: File not found: #{path}"
+        return
+      end
+
       source = Config.current_source
       if source.nil?
         puts "Error: No storage source configured. Run 'filedepot config' to set up."
@@ -57,11 +71,13 @@ module Filedepot
       end
 
       storage = Storage::Base.for(source)
-      storage.push(handle, file_path)
+      storage.push(handle, path)
       version = storage.current_version(handle)
       puts "Pushed #{file_path} as #{handle} (version #{version})"
-      uploaded_url = storage.url(handle, version, File.basename(file_path))
+      uploaded_url = storage.url(handle, version, File.basename(path))
       puts uploaded_url if uploaded_url
+    rescue RuntimeError => e
+      puts "Error: #{e.message}"
     end
 
     desc "pull HANDLE", "Get file from storage"
@@ -100,6 +116,8 @@ module Filedepot
 
       storage.pull(handle, version, target_path)
       puts "pulled to #{target_path}"
+    rescue RuntimeError => e
+      puts "Error: #{e.message}"
     end
 
     desc "versions HANDLE", "List all versions of a handle (each version has an integer from 1 to n)"
@@ -118,7 +136,7 @@ module Filedepot
       storage = Storage::Base.for(source)
       versions_list = storage.versions(handle)
       if versions_list.empty?
-        puts "No versions found for handle: #{handle}"
+        puts "Error: Handle '#{handle}' not found."
       else
         max_display = 10
         to_show = versions_list.first(max_display)
@@ -144,6 +162,12 @@ module Filedepot
       end
 
       storage = Storage::Base.for(source)
+      versions_list = storage.versions(handle)
+      if versions_list.empty?
+        puts "Error: Handle '#{handle}' not found."
+        return
+      end
+
       data = storage.info(handle)
 
       puts "handle: #{data[:handle]}"
@@ -159,8 +183,46 @@ module Filedepot
         puts COMMAND_HELP[:delete]
         return
       end
+
+      source = Config.current_source
+      if source.nil?
+        puts "Error: No storage source configured. Run 'filedepot config' to set up."
+        return
+      end
+
+      storage = Storage::Base.for(source)
+      versions_list = storage.versions(handle)
+      if versions_list.empty?
+        puts "Error: Handle '#{handle}' not found."
+        return
+      end
+      if version
+        version_nums = versions_list.map(&:first)
+        unless version_nums.include?(version.to_i)
+          puts "Error: Version #{version} not found for handle '#{handle}'."
+          return
+        end
+      end
+
       version_str = version ? " version #{version}" : " all versions"
-      puts "delete: would delete file '#{handle}'#{version_str} after confirmation (not implemented)"
+      puts "This will delete '#{handle}'#{version_str}."
+      begin
+        print "Type the handle name to confirm: "
+        input = $stdin.gets&.strip
+      rescue Interrupt
+        puts
+        return
+      end
+
+      unless input == handle
+        puts "Aborted (handle name did not match)."
+        return
+      end
+
+      storage.delete(handle, version)
+      puts "Deleted #{handle}#{version ? " version #{version}" : ""}."
+    rescue RuntimeError => e
+      puts "Error: #{e.message}"
     end
 
     default_task :default

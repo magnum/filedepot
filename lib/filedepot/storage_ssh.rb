@@ -27,7 +27,7 @@ module Filedepot
 
       def push(handle, local_path)
         path = File.expand_path(local_path)
-        raise "File not found: #{local_path}" unless File.file?(path)
+        raise "File not found: #{path}" unless File.file?(path)
 
         push_path = next_version_path(handle)
 
@@ -57,14 +57,14 @@ module Filedepot
       def pull(handle, version = nil, local_path = nil)
         ssh_session do |ssh|
           versions_list = versions_for(ssh, handle)
-          raise "No versions found for handle: #{handle}" if versions_list.empty?
+          raise "Handle '#{handle}' not found" if versions_list.empty?
 
           version_num = version ? version.to_i : versions_list.max
-          raise "Version #{version} not found" unless versions_list.include?(version_num)
+          raise "Version #{version} not found for handle '#{handle}'" unless versions_list.include?(version_num)
 
           version_dir = File.join(remote_handle_path(handle), version_num.to_s)
           remote_file = first_file_in_dir(ssh, version_dir)
-          raise "No file found in version #{version_num}" if remote_file.nil?
+          raise "No file found in version #{version_num} for handle '#{handle}'" if remote_file.nil?
 
           remote_filename = File.basename(remote_file)
           target_path = resolve_local_path(local_path, remote_filename)
@@ -77,14 +77,14 @@ module Filedepot
       def pull_info(handle, version = nil, local_path = nil)
         ssh_session do |ssh|
           versions_list = versions_for(ssh, handle)
-          raise "No versions found for handle: #{handle}" if versions_list.empty?
+          raise "Handle '#{handle}' not found" if versions_list.empty?
 
           version_num = version ? version.to_i : versions_list.max
-          raise "Version #{version} not found" unless versions_list.include?(version_num)
+          raise "Version #{version} not found for handle '#{handle}'" unless versions_list.include?(version_num)
 
           version_dir = File.join(remote_handle_path(handle), version_num.to_s)
           remote_file = first_file_in_dir(ssh, version_dir)
-          raise "No file found in version #{version_num}" if remote_file.nil?
+          raise "No file found in version #{version_num} for handle '#{handle}'" if remote_file.nil?
 
           remote_filename = File.basename(remote_file)
           target_path = resolve_local_path(local_path, remote_filename)
