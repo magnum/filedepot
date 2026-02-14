@@ -23,13 +23,14 @@ Config file: `$HOME/.filedepot/config.yml`
 On first run, a default config is created:
 
 ```yaml
-default_source: test
+
 sources:
   - name: test
-    ssh: ssh
+    type: ssh
     host: 127.0.0.1
     username:
     base_path: /Users/user/filedepot
+default_source: test
 ```
 
 Optional `public_base_path` for public URLs (shown in info and after push):
@@ -41,6 +42,7 @@ sources:
     host: 127.0.0.1
     base_path: /data/filedepot
     public_base_path: https://example.com/files
+default_source: test
 ```
 
 When `default_source` does not match any source name, the first source is used.

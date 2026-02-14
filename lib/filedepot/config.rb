@@ -12,7 +12,7 @@ module Filedepot
       default_source: test
       sources:
         - name: test
-          ssh: ssh
+          type: ssh
           host: 127.0.0.1
           username:
           base_path: %<base_path>s
