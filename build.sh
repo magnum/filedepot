@@ -35,6 +35,8 @@ fi
 echo "Building gem..."
 gem build filedepot.gemspec
 
+git tag -a "v${version}" -m "Release v${version}"
+
 read -r -p "Push to RubyGems? [y/N] " response
 if [[ "$response" =~ ^[yY]$ ]]; then
   gem push "filedepot-${version}.gem"
