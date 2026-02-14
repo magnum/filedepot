@@ -1,4 +1,4 @@
-# Filedepot
+# FileDepot
 
 [![Gem Version](https://badge.fury.io/rb/filedepot.svg)](https://badge.fury.io/rb/filedepot)
 
