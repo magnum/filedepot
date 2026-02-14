@@ -7,6 +7,7 @@ module Filedepot
         ssh: {
           config: {
             "name" => "test",
+            "type" => "ssh",
             "host" => "127.0.0.1",
             "username" => ENV["USER"].to_s.empty? ? "username" : ENV["USER"],
             "base_path" => File.join(File.expand_path("~"), "filedepot")

@@ -25,7 +25,7 @@ Run `filedepot setup` to create the config. On first run of any command, setup i
 ```yaml
 stores:
   - name: test
-    ssh: true
+    type: ssh
     host: 127.0.0.1
     username: user
     base_path: /Users/user/filedepot
@@ -37,7 +37,7 @@ Optional `public_base_path` for public URLs (shown in info and after push):
 ```yaml
 stores:
   - name: test
-    ssh: true
+    type: ssh
     host: 127.0.0.1
     base_path: /data/filedepot
     public_base_path: https://example.com/files
