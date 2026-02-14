@@ -26,6 +26,8 @@ if [[ "$version" != "$current_version" ]]; then
   sed -i.bak "s/VERSION = \"$current_version\"/VERSION = \"$version\"/" "$VERSION_FILE"
   rm -f "${VERSION_FILE}.bak"
   echo "Updated to $version"
+  git add ./lib/filedepot/version.rb
+  git commit --amend --no-edit
 else
   echo "Keeping version $version"
 fi

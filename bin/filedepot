@@ -3,6 +3,11 @@
 
 require "filedepot"
 
+if ARGV.include?("--version") || ARGV.include?("-v")
+  puts Filedepot::VERSION
+  exit 0
+end
+
 # Run setup if config does not exist (first run)
 if ARGV[0] != "setup" && !Filedepot::Config.exists?
   puts "~/.filedepot/config.yml not found, let's config it"
