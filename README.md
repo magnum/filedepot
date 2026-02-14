@@ -20,38 +20,38 @@ gem "filedepot"
 
 Config file: `$HOME/.filedepot/config.yml`
 
-On first run, a default config is created:
+Run `filedepot setup` to create the config. On first run of any command, setup is automatically invoked if no config exists.
 
 ```yaml
-
-sources:
+stores:
   - name: test
-    type: ssh
+    ssh: true
     host: 127.0.0.1
-    username:
+    username: user
     base_path: /Users/user/filedepot
-default_source: test
+default_store: test
 ```
 
 Optional `public_base_path` for public URLs (shown in info and after push):
 
 ```yaml
-sources:
+stores:
   - name: test
-    ssh: ssh
+    ssh: true
     host: 127.0.0.1
     base_path: /data/filedepot
     public_base_path: https://example.com/files
-default_source: test
+default_store: test
 ```
 
-When `default_source` does not match any source name, the first source is used.
+When `default_store` does not match any store name, the first store is used.
 
 ## Commands
 
 | Command | Description |
 |---------|-------------|
-| `filedepot` | Show current source and available commands |
+| `filedepot` | Show current store and available commands |
+| `filedepot setup` | Create or reconfigure config (interactive) |
 | `filedepot config` | Open config file with $EDITOR |
 | `filedepot push HANDLE FILE` | Send file to current storage |
 | `filedepot pull HANDLE [--path PATH] [--version N]` | Get file from storage |

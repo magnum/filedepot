@@ -140,8 +140,8 @@ module Filedepot
       end
 
       def ssh_session
-        host = @source["host"] || "localhost"
-        user = @source["username"].to_s.strip
+        host = @store["host"] || "localhost"
+        user = @store["username"].to_s.strip
         user = ENV["USER"] if user.empty?
 
         Net::SSH.start(host, user) do |ssh|

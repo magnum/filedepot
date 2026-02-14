@@ -8,38 +8,27 @@ module Filedepot
     CONFIG_DIR = File.expand_path("~/.filedepot")
     CONFIG_PATH = File.join(CONFIG_DIR, "config.yml")
 
-    DEFAULT_CONFIG = <<~YAML
-      default_source: test
-      sources:
-        - name: test
-          type: ssh
-          host: 127.0.0.1
-          username:
-          base_path: %<base_path>s
-    YAML
-
     class << self
-      def ensure_config!
-        return if File.exist?(CONFIG_PATH)
-
-        FileUtils.mkdir_p(CONFIG_DIR)
-        base_path = File.join(File.expand_path("~"), "filedepot")
-        File.write(CONFIG_PATH, format(DEFAULT_CONFIG, base_path: base_path))
+      def exists?
+        File.exist?(CONFIG_PATH)
       end
 
       def load
-        ensure_config!
+        return nil unless exists?
+
         YAML.load_file(CONFIG_PATH)
       end
 
-      def current_source
+      def current_store
         config = load
-        default = config["default_source"]
-        sources = config["sources"] || []
-        return nil if sources.empty?
+        return nil if config.nil?
 
-        source = sources.find { |s| (s["name"] || s[:name]) == default }
-        source || sources.first
+        default = config["default_store"]
+        stores = config["stores"] || []
+        return nil if stores.empty?
+
+        store = stores.find { |s| (s["name"] || s[:name]) == default }
+        store || stores.first
       end
     end
   end

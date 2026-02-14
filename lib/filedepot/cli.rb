@@ -14,6 +14,12 @@ module Filedepot
 
         Opens the config file ($HOME/.filedepot/config.yml) using $EDITOR.
       HELP
+      setup: <<~HELP,
+        Usage:
+          filedepot setup
+
+        Create or reconfigure the config file. Prompts for store name, type, host, username, and base path.
+      HELP
       push: <<~HELP,
         Usage:
           filedepot push HANDLE FILE
@@ -44,9 +50,67 @@ module Filedepot
     desc "config", "Open the config file using $EDITOR"
     def config
       config_path = Config::CONFIG_PATH
-      Config.ensure_config!
+      unless Config.exists?
+        puts "Error: No config file. Run 'filedepot setup' first."
+        return
+      end
       editor = ENV["EDITOR"] || "vim"
       exec(editor, config_path)
+    end
+
+    desc "setup", "Create or reconfigure the config file"
+    def setup
+      store_types = Storage::Base.store_types
+      first_type = store_types.keys.first
+      defaults = store_types[first_type][:config].transform_keys(&:to_s)
+
+      if Config.exists?
+        config = Config.load
+        stores = config["stores"] || []
+        first_store = stores.first
+        if first_store
+          defaults["name"] = (first_store["name"] || first_store[:name]).to_s
+          defaults["host"] = (first_store["host"] || first_store[:host]).to_s
+          defaults["username"] = (first_store["username"] || first_store[:username]).to_s
+          defaults["base_path"] = (first_store["base_path"] || first_store[:base_path]).to_s
+        end
+      end
+
+      puts "Configure storage store (press Enter to accept default)"
+      puts ""
+
+      name = prompt_with_default("store name", defaults["name"])
+      type = prompt_with_default("Type (#{store_types.keys.join(', ')})", first_type.to_s)
+      host = prompt_with_default("Host", defaults["host"])
+      username = prompt_with_default("Username", defaults["username"])
+      base_path = prompt_with_default("Base path", defaults["base_path"])
+
+      puts ""
+      puts "Store: #{name}"
+      puts "  Type: #{type}"
+      puts "  Host: #{host}"
+      puts "  Username: #{username}"
+      puts "  Base path: #{base_path}"
+      puts ""
+
+      return unless confirm?("Write config? [y/N]")
+
+      store_hash = {
+        "name" => name,
+        "host" => host,
+        "username" => username,
+        "base_path" => base_path
+      }
+      store_hash["ssh"] = true if type == "ssh"
+
+      config = {
+        "default_store" => name,
+        "stores" => [store_hash]
+      }
+
+      FileUtils.mkdir_p(Config::CONFIG_DIR)
+      File.write(Config::CONFIG_PATH, config.to_yaml)
+      puts "Config written to #{Config::CONFIG_PATH}"
     end
 
     desc "push HANDLE FILE", "Send a file to the current storage with a specific handle"
@@ -65,13 +129,10 @@ module Filedepot
         return
       end
 
-      source = Config.current_source
-      if source.nil?
-        puts "Error: No storage source configured. Run 'filedepot config' to set up."
-        return
-      end
+      store = check_config
+      return unless store
 
-      storage = Storage::Base.for(source)
+      storage = Storage::Base.for(store)
       storage.push(handle, path)
       version = storage.current_version(handle)
       puts "Pushed #{file_path} as #{handle} (version #{version})"
@@ -90,16 +151,13 @@ module Filedepot
         return
       end
 
-      source = Config.current_source
-      if source.nil?
-        puts "Error: No storage source configured. Run 'filedepot config' to set up."
-        return
-      end
+      store = check_config
+      return unless store
 
       local_path = options[:path]
       version = (options[:version].nil? || options[:version].empty?) ? nil : options[:version].to_i
 
-      storage = Storage::Base.for(source)
+      storage = Storage::Base.for(store)
       info = storage.pull_info(handle, version, local_path)
       target_path = info[:target_path]
 
@@ -128,13 +186,10 @@ module Filedepot
         return
       end
 
-      source = Config.current_source
-      if source.nil?
-        puts "Error: No storage source configured. Run 'filedepot config' to set up."
-        return
-      end
+      store = check_config
+      return unless store
 
-      storage = Storage::Base.for(source)
+      storage = Storage::Base.for(store)
       versions_list = storage.versions(handle)
       if versions_list.empty?
         puts "Error: Handle '#{handle}' not found."
@@ -156,13 +211,10 @@ module Filedepot
         return
       end
 
-      source = Config.current_source
-      if source.nil?
-        puts "Error: No storage source configured. Run 'filedepot config' to set up."
-        return
-      end
+      store = check_config
+      return unless store
 
-      storage = Storage::Base.for(source)
+      storage = Storage::Base.for(store)
       versions_list = storage.versions(handle)
       if versions_list.empty?
         puts "Error: Handle '#{handle}' not found."
@@ -180,13 +232,10 @@ module Filedepot
 
     desc "handles", "List all handles in storage"
     def handles
-      source = Config.current_source
-      if source.nil?
-        puts "Error: No storage source configured. Run 'filedepot config' to set up."
-        return
-      end
+      store = check_config
+      return unless store
 
-      storage = Storage::Base.for(source)
+      storage = Storage::Base.for(store)
       handles = storage.ls
       if handles.empty?
         puts "No handles found."
@@ -202,13 +251,10 @@ module Filedepot
         return
       end
 
-      source = Config.current_source
-      if source.nil?
-        puts "Error: No storage source configured. Run 'filedepot config' to set up."
-        return
-      end
+      store = check_config
+      return unless store
 
-      storage = Storage::Base.for(source)
+      storage = Storage::Base.for(store)
       versions_list = storage.versions(handle)
       if versions_list.empty?
         puts "Error: Handle '#{handle}' not found."
@@ -245,21 +291,28 @@ module Filedepot
 
     default_task :default
 
-    desc "default", "Show current source and list of available commands"
+    desc "default", "Show current store and list of available commands"
     def default
-      source = Config.current_source
       config = Config.load
-      default_name = config["default_source"]
+      if config.nil?
+        puts "Error: No storage store configured. Run 'filedepot setup' to set up."
+        return
+      end
+
+      store = Config.current_store
+      default_name = config["default_store"]
 
       puts "filedepot"
       puts "--------"
-      puts "Current source: #{default_name}"
-      if source
-        puts "  Type: #{source['ssh']} (#{source['host']})"
-        puts "  Base path: #{source['base_path']}"
+      puts "Current store: #{default_name}"
+      if store
+        type_str = store["ssh"] ? "ssh" : "unknown"
+      puts "  Type: #{type_str} (#{store['host']})"
+        puts "  Base path: #{store['base_path']}"
       end
       puts ""
       puts "Available commands:"
+      puts "  filedepot setup               Create or reconfigure config"
       puts "  filedepot config              Open config file using $EDITOR"
       puts "  filedepot info HANDLE         Show info for a handle"
       puts "  filedepot handles             List all handles in storage"
@@ -276,6 +329,26 @@ module Filedepot
     end
 
     private
+
+    def prompt_with_default(label, default)
+      default_str = default.to_s
+      prompt = default_str.empty? ? "#{label}: " : "#{label} [#{default_str}]: "
+      print prompt
+      input = $stdin.gets&.strip
+      input.empty? ? default_str : input
+    rescue Interrupt
+      puts
+      exit 1
+    end
+
+    def check_config
+      store = Config.current_store
+      if store.nil?
+        puts "Error: No storage store configured. Run 'filedepot setup' to set up."
+        return nil
+      end
+      store
+    end
 
     def confirm?(prompt)
       print "#{prompt} "

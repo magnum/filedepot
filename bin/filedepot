@@ -3,6 +3,11 @@
 
 require "filedepot"
 
+# Silently run setup if config does not exist (first run)
+if ARGV[0] != "setup" && !Filedepot::Config.exists?
+  Filedepot::CLI.start(["setup"])
+end
+
 # Handle no-args: Thor by default shows help, we want our custom default output
 if ARGV.empty?
   Filedepot::CLI.new.invoke(:default)

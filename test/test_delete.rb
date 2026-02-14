@@ -6,8 +6,8 @@ require_relative "support/local_storage"
 class TestDelete < Minitest::Test
   def setup
     @tmpdir = Dir.mktmpdir("filedepot_test")
-    @source = { "base_path" => @tmpdir }
-    @storage = Filedepot::Storage::LocalStorage.new(@source)
+    @store = { "base_path" => @tmpdir }
+    @storage = Filedepot::Storage::LocalStorage.new(@store)
   end
 
   def teardown

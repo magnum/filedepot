@@ -6,8 +6,8 @@ require_relative "support/local_storage"
 class TestVersionsData < Minitest::Test
   def setup
     @tmpdir = Dir.mktmpdir("filedepot_test")
-    @source = { "base_path" => @tmpdir }
-    @storage = Filedepot::Storage::LocalStorage.new(@source)
+    @store = { "base_path" => @tmpdir }
+    @storage = Filedepot::Storage::LocalStorage.new(@store)
   end
 
   def teardown
@@ -30,8 +30,8 @@ class TestVersionsData < Minitest::Test
   end
 
   def test_versions_data_url_when_public_base_path_set
-    @source["public_base_path"] = "https://example.com/files"
-    storage = Filedepot::Storage::LocalStorage.new(@source)
+    @store["public_base_path"] = "https://example.com/files"
+    storage = Filedepot::Storage::LocalStorage.new(@store)
 
     handle_dir = File.join(@tmpdir, "test")
     FileUtils.mkdir_p(File.join(handle_dir, "1"))
@@ -53,8 +53,8 @@ class TestVersionsData < Minitest::Test
   end
 
   def test_info_includes_updated_at_and_url
-    @source["public_base_path"] = "https://example.com/files"
-    storage = Filedepot::Storage::LocalStorage.new(@source)
+    @store["public_base_path"] = "https://example.com/files"
+    storage = Filedepot::Storage::LocalStorage.new(@store)
 
     handle_dir = File.join(@tmpdir, "info_handle")
     FileUtils.mkdir_p(File.join(handle_dir, "1"))
