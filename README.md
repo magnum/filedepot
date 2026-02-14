@@ -67,12 +67,6 @@ chmod 2775 /data/filedepot
 setfacl -d -m g:filedepot:rwx /data/filedepot
 ```
 
-For existing folders:
-
-```bash
-setfacl -m g:filedepot:rwx /data/filedepot
-```
-
 ## Commands
 
 | Command | Description |
