@@ -62,6 +62,7 @@ usermod -aG filedepot user # for evey user you want allow filedepot
 
 # set folder
 mkdir -p /data/filedepot
+chown -R :filedepot /data/filedepot/
 chmod 2775 /data/filedepot
 setfacl -d -m g:filedepot:rwx /data/filedepot
 ```
