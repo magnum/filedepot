@@ -51,6 +51,7 @@ When `default_source` does not match any source name, the first source is used.
 | `filedepot config` | Open config file with $EDITOR |
 | `filedepot push HANDLE FILE` | Send file to current storage |
 | `filedepot pull HANDLE [--path PATH] [--version N]` | Get file from storage |
+| `filedepot handles` | List all handles in storage |
 | `filedepot versions HANDLE` | List all versions of a handle |
 | `filedepot info HANDLE` | Show info for a handle |
 | `filedepot delete HANDLE [VERSION]` | Delete file(s) after confirmation |

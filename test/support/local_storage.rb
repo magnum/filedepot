@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-# Local filesystem storage for testing - mirrors SshStorage structure
+# Local filesystem storage for testing - mirrors Ssh structure
 # without requiring SSH. Uses base_path/handle/1/, base_path/handle/2/, etc.
 module Filedepot
   module Storage

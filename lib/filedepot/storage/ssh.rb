@@ -6,7 +6,7 @@ require "net/scp"
 
 module Filedepot
   module Storage
-    class SshStorage < Base
+    class Ssh < Base
       def test
         ssh_session do |ssh|
           result = ssh.exec!("echo ok")

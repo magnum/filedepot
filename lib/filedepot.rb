@@ -3,7 +3,7 @@
 require "filedepot/version"
 require "filedepot/config"
 require "filedepot/storage/base"
-require "filedepot/storage_ssh"
+require "filedepot/storage/ssh"
 require "filedepot/cli"
 
 module Filedepot

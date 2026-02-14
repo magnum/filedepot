@@ -5,7 +5,7 @@ module Filedepot
     class Base
       def self.for(source)
         if source["ssh"]
-          SshStorage.new(source)
+          Ssh.new(source)
         else
           raise ArgumentError, "Unknown storage type for source: #{source["name"]}"
         end

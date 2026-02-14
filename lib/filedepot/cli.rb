@@ -37,7 +37,8 @@ module Filedepot
       HELP
       versions: "Usage: filedepot versions HANDLE\n\nList all versions of a handle. Each version has an integer ID from 1 to n.",
       delete: "Usage: filedepot delete HANDLE [VERSION]\n\nAfter confirmation, deletes all versions of a file.\nIf VERSION is specified, deletes only that specific version.",
-      info: "Usage: filedepot info HANDLE\n\nShow info for a handle: remote base path and current version."
+      info: "Usage: filedepot info HANDLE\n\nShow info for a handle: remote base path and current version.",
+      handles: "Usage: filedepot handles\n\nList all handles in storage."
     }.freeze
 
     desc "config", "Open the config file using $EDITOR"
@@ -177,6 +178,23 @@ module Filedepot
       puts "latest version url: #{data[:latest_version_url]}" if data[:latest_version_url]
     end
 
+    desc "handles", "List all handles in storage"
+    def handles
+      source = Config.current_source
+      if source.nil?
+        puts "Error: No storage source configured. Run 'filedepot config' to set up."
+        return
+      end
+
+      storage = Storage::Base.for(source)
+      handles = storage.ls
+      if handles.empty?
+        puts "No handles found."
+      else
+        handles.each { |h| puts h }
+      end
+    end
+
     desc "delete HANDLE [VERSION]", "After confirmation, delete all versions of a file; or only a specific version if specified"
     def delete(handle = nil, version = nil)
       if handle.nil?
@@ -220,7 +238,7 @@ module Filedepot
       end
 
       storage.delete(handle, version)
-      puts "Deleted #{handle}#{version ? " version #{version}" : ""}."
+      puts "Deleted handle#{handle}#{version ? " version #{version}" : ""}."
     rescue RuntimeError => e
       puts "Error: #{e.message}"
     end
@@ -243,10 +261,11 @@ module Filedepot
       puts ""
       puts "Available commands:"
       puts "  filedepot config              Open config file using $EDITOR"
+      puts "  filedepot info HANDLE         Show info for a handle"
+      puts "  filedepot handles             List all handles in storage"
+      puts "  filedepot versions HANDLE     List all versions of a handle"
       puts "  filedepot push HANDLE FILE    Send file to current storage"
       puts "  filedepot pull HANDLE [--path PATH] [--version N]  Get file from storage"
-      puts "  filedepot versions HANDLE     List all versions of a handle"
-      puts "  filedepot info HANDLE         Show info for a handle"
       puts "  filedepot delete HANDLE [VER] Delete file(s) after confirmation"
       puts ""
       puts "Use 'filedepot help COMMAND' for more information on a command."
