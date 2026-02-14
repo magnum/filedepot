@@ -30,6 +30,14 @@ module Filedepot
         store = stores.find { |s| (s["name"] || s[:name]) == default }
         store || stores.first
       end
+
+      def store_by_name(name)
+        config = load
+        return nil if config.nil?
+
+        stores = config["stores"] || []
+        stores.find { |s| (s["name"] || s[:name]) == name }
+      end
     end
   end
 end

@@ -49,12 +49,20 @@ stores:
 
 When `default_store` does not match any store name, the first store is used.
 
+You can specify a store other than default by passing `--store [name]` for every command except `setup` and `config`.
+
 ## Permissions
 
 On the server, use these commands to set up the folder for filedepot:
 
 ```bash
-chmod 2775 /data/condivisa
+# set group
+groupadd filedepot
+usermod -aG filedepot user # for evey user you want allow filedepot
+
+# set folder
+mkdir -p /data/filedepot
+chmod 2775 /data/filedepot
 setfacl -d -m g:filedepot:rwx /data/filedepot
 ```
 

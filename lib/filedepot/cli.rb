@@ -7,6 +7,8 @@ module Filedepot
   class CLI < Thor
     package_name "filedepot"
 
+    class_option :store, type: :string, desc: "Use this store instead of default"
+
     COMMAND_HELP = {
       config: <<~HELP,
         Usage:
@@ -429,6 +431,8 @@ module Filedepot
         puts "#{store.to_yaml}"
       end
       puts ""
+      puts "You can specify a store other than default by passing --store [name] for every command except setup and config."
+      puts ""
       puts "Available commands:"
       puts "filedepot setup               Create or reconfigure config"
       puts "filedepot config              Open config file using $EDITOR"
@@ -462,9 +466,15 @@ module Filedepot
     end
 
     def check_config
-      store = Config.current_store
+      store_name = options[:store].to_s.strip
+      store = if store_name.empty?
+        Config.current_store
+      else
+        Config.store_by_name(store_name)
+      end
       if store.nil?
-        puts "Error: No storage store configured. Run 'filedepot setup' to set up."
+        msg = store_name.empty? ? "No storage store configured. Run 'filedepot setup' to set up." : "Store '#{store_name}' not found."
+        puts "Error: #{msg}"
         return nil
       end
       store
