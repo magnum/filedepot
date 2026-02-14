@@ -18,30 +18,33 @@ gem "filedepot"
 
 ## Configuration
 
-Config file: `$HOME/.filedepot/config.yml`
+Config file: `~/.filedepot/config.yml`
 
-Run `filedepot setup` to create the config. On first run of any command, setup is automatically invoked if no config exists.
+Run `filedepot setup` to create the config. On first run of any command, if the config file is not found, you will see "~/.filedepot/config.yml not found, let's config it" and setup is invoked automatically.
+
+Config structure (keys in order):
 
 ```yaml
+default_store: test
 stores:
   - name: test
     type: ssh
     host: 127.0.0.1
     username: user
     base_path: /Users/user/filedepot
-default_store: test
 ```
 
 Optional `public_base_url` for public URLs (shown in info and after push):
 
 ```yaml
+default_store: test
 stores:
   - name: test
     type: ssh
     host: 127.0.0.1
+    username: user
     base_path: /data/filedepot
     public_base_url: https://example.com/files
-default_store: test
 ```
 
 When `default_store` does not match any store name, the first store is used.
@@ -51,14 +54,23 @@ When `default_store` does not match any store name, the first store is used.
 | Command | Description |
 |---------|-------------|
 | `filedepot` | Show current store and available commands |
-| `filedepot setup` | Create or reconfigure config (interactive) |
-| `filedepot config` | Open config file with $EDITOR |
+| `filedepot setup` | Create or reconfigure config (interactive, prompts for name, type, host, username, base path, public base URL) |
+| `filedepot config` | Open config file with $EDITOR; asks to run a test after closing |
 | `filedepot push HANDLE FILE` | Send file to current storage |
 | `filedepot pull HANDLE [--path PATH] [--version N]` | Get file from storage |
 | `filedepot handles` | List all handles in storage |
 | `filedepot versions HANDLE` | List all versions of a handle |
 | `filedepot info HANDLE` | Show info for a handle |
-| `filedepot delete HANDLE [VERSION]` | Delete file(s) after confirmation |
+| `filedepot delete HANDLE [VERSION] [--yes]` | Delete file(s) after confirmation; use `--yes` to skip confirmation |
+| `filedepot test` | Run end-to-end test (push, pull, delete a temporary file) |
+
+### Setup
+
+Prompts for store name, type, host, username, base path, and optional public base URL. After writing the config, asks "Run a test? [y/N]".
+
+### Config
+
+Opens the config file in your editor. After you close the editor, asks "Run a test? [y/N]".
 
 ### Push
 
@@ -86,6 +98,14 @@ Lists versions in descending order with creation datetime. Shows at most 10, wit
 ### Info
 
 Shows handle, remote base path, current version, updated-at datetime, and latest version URL (when `public_base_url` is set).
+
+### Delete
+
+Deletes all versions of a handle, or a specific version if `VERSION` is given. Requires typing the handle name to confirm. Use `--yes` or `-y` to skip confirmation (for scripts).
+
+### Test
+
+Runs an end-to-end test: creates a temporary file, pushes it, deletes locally, pulls it back, deletes the handle. Prints "Test is OK" or "Test is KO, see the outputs for errors".
 
 ## Testing
 
