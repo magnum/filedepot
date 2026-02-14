@@ -1,4 +1,4 @@
-# Filedepot
+# FileDepot
 
 [![Gem Version](https://badge.fury.io/rb/filedepot.svg)](https://badge.fury.io/rb/filedepot)
 
@@ -56,11 +56,11 @@ You can specify a store other than default by passing `--store [name]` for every
 On the server, use these commands to set up the folder for filedepot:
 
 ```bash
-# set group
+# set group, eg. filedepot
 groupadd filedepot
 usermod -aG filedepot user # for evey user you want allow filedepot
 
-# set folder
+# set folder, eg. /data/filedepot
 mkdir -p /data/filedepot
 chown -R :filedepot /data/filedepot/
 chmod 2775 /data/filedepot
@@ -84,11 +84,11 @@ setfacl -d -m g:filedepot:rwx /data/filedepot
 
 ### Setup
 
-Prompts for store name, type, host, username, base path, and optional public base URL. After writing the config.
+Prompts for store name, type, host, username, base path, and optional public base URL. Then writes the config file .
 
 ### Config
 
-Opens the config file in your editor. After you close the editor.
+Opens the config file in your default editor.
 
 ### Push
 
@@ -119,11 +119,11 @@ Shows handle, remote base path, current version, updated-at datetime, and latest
 
 ### Delete
 
-Deletes all versions of a handle, or a specific version with `--version N`. Requires typing the handle name to confirm. Use `--yes` or `-y` to skip confirmation (for scripts).
+Deletes all versions of a handle, or a specific version with `--version N`. Use `--yes` or `-y` to skip confirmation (for scripts).
 
 ### Test
 
-Runs an end-to-end test: creates a temporary file, pushes it, deletes locally, pulls it back, deletes the handle. Prints "Test is OK" or "Test is KO, see the outputs for errors".
+Runs an end-to-end test: creates a temporary file, pushes it, deletes locally, pulls it back, deletes the handle.
 
 ## Testing
 
