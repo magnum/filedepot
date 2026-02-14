@@ -2,7 +2,7 @@
 
 [![Gem Version](https://badge.fury.io/rb/filedepot.svg)](https://badge.fury.io/rb/filedepot)
 
-Command-line tool to sync files on remote storage via SSH.
+Filedepot is a command-line tool that lets you efficiently synchronize different files between people using a remote server over SSH. Each file is identified by a **handle** — a stable name you choose. The system automatically keeps versions of every upload. Use `filedepot push HANDLE FILE` to upload; use `filedepot pull HANDLE` to download the latest version by default.
 
 ## Installation
 
