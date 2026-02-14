@@ -132,6 +132,17 @@ bundle install
 bundle exec rake test
 ```
 
+## Notes
+
+### Why not using rsync?
+
+- Keeps versions of every uploaded file and lets you download or delete specific versions when needed
+- Supports multiple remote stores (configure several and switch with `--store`)
+- Other store types can be implemented beyond SSH: the base logic lives in the Store base class; each store type implements the required methods—similar to how FUSE works with filesystems
+- Once configured, commands are quick: `filedepot push HANDLE FILE` and `filedepot pull HANDLE`
+- Files stay organized in folders by handle and version
+- Useful commands include `filedepot versions HANDLE` for reports on versions, dates, and sizes, and `filedepot purge HANDLE` to remove old versions
+
 ## License
 
 MIT
