@@ -10,7 +10,8 @@ module Filedepot
             "type" => "ssh",
             "host" => "127.0.0.1",
             "username" => ENV["USER"].to_s.empty? ? "username" : ENV["USER"],
-            "base_path" => File.join(File.expand_path("~"), "filedepot")
+            "base_path" => File.join(File.expand_path("~"), "filedepot"),
+            "public_base_url" => nil
           }
         }
       }.freeze
@@ -20,7 +21,7 @@ module Filedepot
       end
 
       def self.for(store)
-        if store["ssh"]
+        if store["type"] == "ssh"
           Ssh.new(store)
         else
           raise ArgumentError, "Unknown storage type for store: #{store["name"]}"
@@ -90,7 +91,7 @@ module Filedepot
       end
 
       def url(handle, version, filename)
-        base = @store["public_base_path"].to_s.sub(%r{/+$}, "")
+        base = @store["public_base_url"].to_s.sub(%r{/+$}, "")
         return nil if base.empty? || filename.nil? || filename.empty?
 
         path = [handle, version, filename].join("/")

@@ -36,8 +36,8 @@ class TestInfo < Minitest::Test
     assert info[:updated_at].is_a?(Time)
   end
 
-  def test_info_includes_latest_version_url_when_public_base_path_set
-    @store["public_base_path"] = "https://example.com/files"
+  def test_info_includes_latest_version_url_when_public_base_url_set
+    @store["public_base_url"] = "https://example.com/files"
     storage = Filedepot::Storage::LocalStorage.new(@store)
 
     handle_dir = File.join(@tmpdir, "handle")
@@ -49,7 +49,7 @@ class TestInfo < Minitest::Test
     assert_equal "https://example.com/files/handle/1/doc.pdf", info[:latest_version_url]
   end
 
-  def test_info_latest_version_url_nil_without_public_base_path
+  def test_info_latest_version_url_nil_without_public_base_url
     handle_dir = File.join(@tmpdir, "handle")
     FileUtils.mkdir_p(File.join(handle_dir, "1"))
     File.write(File.join(handle_dir, "1", "file.txt"), "content")

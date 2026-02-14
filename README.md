@@ -32,7 +32,7 @@ stores:
 default_store: test
 ```
 
-Optional `public_base_path` for public URLs (shown in info and after push):
+Optional `public_base_url` for public URLs (shown in info and after push):
 
 ```yaml
 stores:
@@ -40,7 +40,7 @@ stores:
     type: ssh
     host: 127.0.0.1
     base_path: /data/filedepot
-    public_base_path: https://example.com/files
+    public_base_url: https://example.com/files
 default_store: test
 ```
 
@@ -66,7 +66,7 @@ When `default_store` does not match any store name, the first store is used.
 filedepot push test test.txt
 ```
 
-Sends `test.txt` to storage with handle `test`. Each push creates a new version. When `public_base_path` is configured, the URL is shown after upload.
+Sends `test.txt` to storage with handle `test`. Each push creates a new version. When `public_base_url` is configured, the URL is shown after upload.
 
 ### Pull
 
@@ -85,7 +85,7 @@ Lists versions in descending order with creation datetime. Shows at most 10, wit
 
 ### Info
 
-Shows handle, remote base path, current version, updated-at datetime, and latest version URL (when `public_base_path` is set).
+Shows handle, remote base path, current version, updated-at datetime, and latest version URL (when `public_base_url` is set).
 
 ## Testing
 

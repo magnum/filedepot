@@ -44,8 +44,38 @@ module Filedepot
       versions: "Usage: filedepot versions HANDLE\n\nList all versions of a handle. Each version has an integer ID from 1 to n.",
       delete: "Usage: filedepot delete HANDLE [VERSION]\n\nAfter confirmation, deletes all versions of a file.\nIf VERSION is specified, deletes only that specific version.",
       info: "Usage: filedepot info HANDLE\n\nShow info for a handle: remote base path and current version.",
-      handles: "Usage: filedepot handles\n\nList all handles in storage."
+      handles: "Usage: filedepot handles\n\nList all handles in storage.",
+      test: "Usage: filedepot test\n\nRun end-to-end test: push, pull, delete a temporary file."
     }.freeze
+
+    desc "test", "Run end-to-end test (push, pull, delete)"
+    def test
+      store = check_config
+      return unless store
+
+      timestamp = Time.now.to_i
+      test_handle = timestamp.to_s
+      test_filename = "#{timestamp}.txt"
+
+      File.write(test_filename, Time.now.to_s)
+      invoke :push, [test_handle, test_filename]
+
+      File.delete(test_filename)
+
+      invoke :pull, [test_handle]
+
+      invoke :delete, [test_handle], yes: true
+
+      if File.exist?(test_filename)
+        File.delete(test_filename)
+        puts "Test is OK"
+      else
+        puts "Test is KO, see the outputs for errors"
+      end
+    rescue RuntimeError => e
+      puts "Test is KO, see the outputs for errors"
+      puts "Error: #{e.message}"
+    end
 
     desc "config", "Open the config file using $EDITOR"
     def config
@@ -55,7 +85,10 @@ module Filedepot
         return
       end
       editor = ENV["EDITOR"] || "vim"
-      exec(editor, config_path)
+      system(editor, config_path)
+      return unless confirm?("Run a test? [y/N]")
+
+      invoke :test
     end
 
     desc "setup", "Create or reconfigure the config file"
@@ -73,6 +106,7 @@ module Filedepot
           defaults["host"] = (first_store["host"] || first_store[:host]).to_s
           defaults["username"] = (first_store["username"] || first_store[:username]).to_s
           defaults["base_path"] = (first_store["base_path"] || first_store[:base_path]).to_s
+          defaults["public_base_url"] = (first_store["public_base_url"] || first_store[:public_base_url]).to_s
         end
       end
 
@@ -84,6 +118,7 @@ module Filedepot
       host = prompt_with_default("Host", defaults["host"])
       username = prompt_with_default("Username", defaults["username"])
       base_path = prompt_with_default("Base path", defaults["base_path"])
+      public_base_url = prompt_with_default("Public base URL (optional)", defaults["public_base_url"])
 
       puts ""
       puts "Store: #{name}"
@@ -91,17 +126,19 @@ module Filedepot
       puts "  Host: #{host}"
       puts "  Username: #{username}"
       puts "  Base path: #{base_path}"
+      puts "  Public base URL: #{public_base_url}" unless public_base_url.empty?
       puts ""
 
       return unless confirm?("Write config? [y/N]")
 
       store_hash = {
         "name" => name,
+        "type" => type,
         "host" => host,
         "username" => username,
-        "base_path" => base_path
-      }
-      store_hash["ssh"] = true if type == "ssh"
+        "base_path" => base_path,
+        "public_base_url" => (public_base_url.empty? ? nil : public_base_url)
+      }.compact
 
       config = {
         "default_store" => name,
@@ -111,6 +148,10 @@ module Filedepot
       FileUtils.mkdir_p(Config::CONFIG_DIR)
       File.write(Config::CONFIG_PATH, config.to_yaml)
       puts "Config written to #{Config::CONFIG_PATH}"
+
+      return unless confirm?("Run a test? [y/N]")
+
+      invoke :test
     end
 
     desc "push HANDLE FILE", "Send a file to the current storage with a specific handle"
@@ -245,6 +286,7 @@ module Filedepot
     end
 
     desc "delete HANDLE [VERSION]", "After confirmation, delete all versions of a file; or only a specific version if specified"
+    method_option :yes, type: :boolean, aliases: "-y", desc: "Skip confirmation (for scripts)"
     def delete(handle = nil, version = nil)
       if handle.nil?
         puts COMMAND_HELP[:delete]
@@ -268,19 +310,21 @@ module Filedepot
         end
       end
 
-      version_str = version ? " version #{version}" : " all versions"
-      puts "This will delete '#{handle}'#{version_str}."
-      begin
-        print "Type the handle name to confirm: "
-        input = $stdin.gets&.strip
-      rescue Interrupt
-        puts
-        return
-      end
+      unless options[:yes]
+        version_str = version ? " version #{version}" : " all versions"
+        puts "This will delete '#{handle}'#{version_str}."
+        begin
+          print "Type the handle name to confirm: "
+          input = $stdin.gets&.strip
+        rescue Interrupt
+          puts
+          return
+        end
 
-      unless input == handle
-        puts "Aborted (handle name did not match)."
-        return
+        unless input == handle
+          puts "Aborted (handle name did not match)."
+          return
+        end
       end
 
       storage.delete(handle, version)
@@ -306,7 +350,7 @@ module Filedepot
       puts "--------"
       puts "Current store: #{default_name}"
       if store
-        type_str = store["ssh"] ? "ssh" : "unknown"
+        type_str = store["type"] ? store["type"] : "unknown"
       puts "  Type: #{type_str} (#{store['host']})"
         puts "  Base path: #{store['base_path']}"
       end
@@ -320,6 +364,7 @@ module Filedepot
       puts "  filedepot push HANDLE FILE    Send file to current storage"
       puts "  filedepot pull HANDLE [--path PATH] [--version N]  Get file from storage"
       puts "  filedepot delete HANDLE [VER] Delete file(s) after confirmation"
+      puts "  filedepot test                 Run end-to-end test"
       puts ""
       puts "Use 'filedepot help COMMAND' for more information on a command."
     end

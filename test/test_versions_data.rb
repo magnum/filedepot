@@ -29,8 +29,8 @@ class TestVersionsData < Minitest::Test
     assert data.first[:datetime].is_a?(Time)
   end
 
-  def test_versions_data_url_when_public_base_path_set
-    @store["public_base_path"] = "https://example.com/files"
+  def test_versions_data_url_when_public_base_url_set
+    @store["public_base_url"] = "https://example.com/files"
     storage = Filedepot::Storage::LocalStorage.new(@store)
 
     handle_dir = File.join(@tmpdir, "test")
@@ -42,7 +42,7 @@ class TestVersionsData < Minitest::Test
     assert_equal "https://example.com/files/test/1/file.txt", data.first[:url]
   end
 
-  def test_versions_data_url_nil_without_public_base_path
+  def test_versions_data_url_nil_without_public_base_url
     handle_dir = File.join(@tmpdir, "test")
     FileUtils.mkdir_p(File.join(handle_dir, "1"))
     File.write(File.join(handle_dir, "1", "file.txt"), "content")
@@ -53,7 +53,7 @@ class TestVersionsData < Minitest::Test
   end
 
   def test_info_includes_updated_at_and_url
-    @store["public_base_path"] = "https://example.com/files"
+    @store["public_base_url"] = "https://example.com/files"
     storage = Filedepot::Storage::LocalStorage.new(@store)
 
     handle_dir = File.join(@tmpdir, "info_handle")

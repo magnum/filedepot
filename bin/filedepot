@@ -3,8 +3,9 @@
 
 require "filedepot"
 
-# Silently run setup if config does not exist (first run)
+# Run setup if config does not exist (first run)
 if ARGV[0] != "setup" && !Filedepot::Config.exists?
+  puts "~/.filedepot/config.yml not found, let's config it"
   Filedepot::CLI.start(["setup"])
 end
 
