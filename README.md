@@ -56,11 +56,11 @@ You can specify a store other than default by passing `--store [name]` for every
 On the server, use these commands to set up the folder for filedepot:
 
 ```bash
-# set group
+# set group, ie. filedepot
 groupadd filedepot
 usermod -aG filedepot user # for evey user you want allow filedepot
 
-# set folder
+# set folder, ie. /data/filedepot
 mkdir -p /data/filedepot
 chown -R :filedepot /data/filedepot/
 chmod 2775 /data/filedepot
