@@ -42,7 +42,7 @@ module Filedepot
           filedepot pull test --version 2 --path ./test/file.txt
       HELP
       versions: "Usage: filedepot versions HANDLE\n\nList all versions of a handle. Each version has an integer ID from 1 to n.\nTo get the list of handles, use: filedepot handles",
-      delete: "Usage: filedepot delete HANDLE [VERSION]\n\nAfter confirmation, deletes all versions of a file.\nIf VERSION is specified, deletes only that specific version.",
+      delete: "Usage: filedepot delete HANDLE [--version N]\n\nAfter confirmation, deletes all versions of a file.\nIf --version N is specified, deletes only that specific version.",
       info: "Usage: filedepot info HANDLE\n\nShow info for a handle: remote base path and current version.",
       handles: "Usage: filedepot handles\n\nList all handles in storage.",
       test: "Usage: filedepot test\n\nRun end-to-end test: push, pull, delete a temporary file."
@@ -285,9 +285,10 @@ module Filedepot
       end
     end
 
-    desc "delete HANDLE [VERSION]", "After confirmation, delete all versions of a file; or only a specific version if specified"
+    desc "delete HANDLE", "After confirmation, delete all versions of a file; or only a specific version with --version N"
+    method_option :version, type: :string, desc: "Delete only this version number"
     method_option :yes, type: :boolean, aliases: "-y", desc: "Skip confirmation (for scripts)"
-    def delete(handle = nil, version = nil)
+    def delete(handle = nil)
       if handle.nil?
         puts COMMAND_HELP[:delete]
         return
@@ -302,9 +303,10 @@ module Filedepot
         puts "Error: Handle '#{handle}' not found."
         return
       end
-      if version
+      version = (options[:version].nil? || options[:version].empty?) ? nil : options[:version].to_i
+      if version && version > 0
         version_nums = versions_list.map(&:first)
-        unless version_nums.include?(version.to_i)
+        unless version_nums.include?(version)
           puts "Error: Version #{version} not found for handle '#{handle}'."
           return
         end
@@ -344,27 +346,22 @@ module Filedepot
       end
 
       store = Config.current_store
-      default_name = config["default_store"]
-
-      puts "filedepot"
-      puts "--------"
-      puts "Current store: #{default_name}"
       if store
+        puts "Current store:"
         type_str = store["type"] ? store["type"] : "unknown"
-      puts "  Type: #{type_str} (#{store['host']})"
-        puts "  Base path: #{store['base_path']}"
+        puts "#{store.to_yaml}"
       end
       puts ""
       puts "Available commands:"
-      puts "  filedepot setup               Create or reconfigure config"
-      puts "  filedepot config              Open config file using $EDITOR"
-      puts "  filedepot test                Run end-to-end test"
-      puts "  filedepot info HANDLE         Show info for a handle"
-      puts "  filedepot handles             List all handles in storage"
-      puts "  filedepot versions HANDLE     List all versions of a handle"
-      puts "  filedepot push HANDLE FILE    Send file to current storage"
-      puts "  filedepot pull HANDLE [--path PATH] [--version N]  Get file from storage"
-      puts "  filedepot delete HANDLE [VER] Delete file(s) after confirmation"
+      puts "filedepot setup               Create or reconfigure config"
+      puts "filedepot config              Open config file using $EDITOR"
+      puts "filedepot test                Run end-to-end test"
+      puts "filedepot info HANDLE         Show info for a handle"
+      puts "filedepot handles             List all handles in storage"
+      puts "filedepot versions HANDLE     List all versions of a handle"
+      puts "filedepot push HANDLE FILE    Send file to current storage"
+      puts "filedepot pull HANDLE [--path PATH] [--version N]  Get file from storage"
+      puts "filedepot delete HANDLE [--version N] Delete file(s) after confirmation"
       puts ""
       puts "Use 'filedepot help COMMAND' for more information on a command."
     end

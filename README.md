@@ -61,7 +61,7 @@ When `default_store` does not match any store name, the first store is used.
 | `filedepot handles` | List all handles in storage |
 | `filedepot versions HANDLE` | List all versions of a handle |
 | `filedepot info HANDLE` | Show info for a handle |
-| `filedepot delete HANDLE [VERSION] [--yes]` | Delete file(s) after confirmation; use `--yes` to skip confirmation |
+| `filedepot delete HANDLE [--version N] [--yes]` | Delete file(s) after confirmation; use `--version N` for a specific version, `--yes` to skip confirmation |
 | `filedepot test` | Run end-to-end test (push, pull, delete a temporary file) |
 
 ### Setup
@@ -101,7 +101,7 @@ Shows handle, remote base path, current version, updated-at datetime, and latest
 
 ### Delete
 
-Deletes all versions of a handle, or a specific version if `VERSION` is given. Requires typing the handle name to confirm. Use `--yes` or `-y` to skip confirmation (for scripts).
+Deletes all versions of a handle, or a specific version with `--version N`. Requires typing the handle name to confirm. Use `--yes` or `-y` to skip confirmation (for scripts).
 
 ### Test
 
