@@ -57,6 +57,10 @@ module Filedepot
         raise "not implemented"
       end
 
+      def handles_data
+        raise "not implemented"
+      end
+
       def push(handle, local_path)
         raise "not implemented"
       end

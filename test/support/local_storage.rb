@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "shellwords"
+
 # Local filesystem storage for testing - mirrors Ssh structure
 # without requiring SSH. Uses base_path/handle/1/, base_path/handle/2/, etc.
 module Filedepot
@@ -10,9 +12,19 @@ module Filedepot
       end
 
       def ls
+        handles_data.map { |h| h[:handle] }
+      end
+
+      def handles_data
         return [] unless Dir.exist?(remote_base_path)
 
-        Dir.children(remote_base_path).select { |c| File.directory?(File.join(remote_base_path, c)) }
+        handle_names = Dir.children(remote_base_path).select { |c| File.directory?(File.join(remote_base_path, c)) }
+        handle_names.map do |name|
+          handle_dir = File.join(remote_base_path, name)
+          versions_list = versions_for(name)
+          size_str = du_size(handle_dir)
+          { handle: name, versions_count: versions_list.size, size: size_str }
+        end
       end
 
       def push(handle, local_path)
@@ -75,19 +87,21 @@ module Filedepot
           remote_file = first_file_in_dir(version_dir)
           mtime = remote_file ? File.mtime(remote_file) : nil
           filename = remote_file ? File.basename(remote_file) : nil
+          size_str = du_size(version_dir)
           {
             version: v,
             datetime: mtime,
             path: remote_file || version_dir,
             handle: handle,
             filename: filename,
-            url: url(handle, v, filename)
+            url: url(handle, v, filename),
+            size: size_str
           }
         end
       end
 
       def versions(handle)
-        versions_data(handle).map { |d| [d[:version], d[:datetime] ? d[:datetime].to_s : ""] }
+        versions_data(handle).map { |d| [d[:version], d[:datetime] ? d[:datetime].to_s : "", d[:size] || ""] }
       end
 
       def delete(handle, version = nil)
@@ -126,6 +140,13 @@ module Filedepot
 
         first = Dir.children(dir).first
         first ? File.join(dir, first) : nil
+      end
+
+      def du_size(path)
+        return "" unless Dir.exist?(path)
+
+        result = `du -sh #{Shellwords.escape(path)} 2>/dev/null`.strip
+        result.split(/\s+/).first || ""
       end
     end
   end

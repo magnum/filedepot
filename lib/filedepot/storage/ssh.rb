@@ -15,14 +15,22 @@ module Filedepot
       end
 
       def ls
-        handles = []
+        handles_data.map { |h| h[:handle] }
+      end
+
+      def handles_data
         ssh_session do |ssh|
           result = ssh.exec!("ls -1 #{shell_escape(remote_base_path)} 2>/dev/null || true")
           return [] if result.nil? || result.strip.empty?
 
-          handles = result.strip.split("\n").select { |line| !line.empty? }
+          handle_names = result.strip.split("\n").select { |line| !line.empty? }
+          handle_names.map do |name|
+            handle_dir = File.join(remote_base_path, name)
+            versions_list = versions_for(ssh, name)
+            size_str = du_size(ssh, handle_dir)
+            { handle: name, versions_count: versions_list.size, size: size_str }
+          end
         end
-        handles
       end
 
       def push(handle, local_path)
@@ -102,20 +110,22 @@ module Filedepot
             remote_file = first_file_in_dir(ssh, version_dir)
             path = remote_file || version_dir
             filename = remote_file ? File.basename(remote_file) : nil
+            size_str = du_size(ssh, version_dir)
             {
               version: v,
               datetime: epoch ? Time.at(epoch) : nil,
               path: path,
               handle: handle,
               filename: filename,
-              url: url(handle, v, filename)
+              url: url(handle, v, filename),
+              size: size_str
             }
           end
         end
       end
 
       def versions(handle)
-        versions_data(handle).map { |d| [d[:version], d[:datetime] ? d[:datetime].to_s : ""] }
+        versions_data(handle).map { |d| [d[:version], d[:datetime] ? d[:datetime].to_s : "", d[:size] || ""] }
       end
 
       def delete(handle, version = nil)
@@ -173,6 +183,11 @@ module Filedepot
         # Linux: stat -c %Y; macOS: stat -f %m
         result = ssh.exec!("stat -c %Y #{shell_escape(path)} 2>/dev/null || stat -f %m #{shell_escape(path)} 2>/dev/null")
         result&.strip&.to_i
+      end
+
+      def du_size(ssh, path)
+        result = ssh.exec!("du -sh #{shell_escape(path)} 2>/dev/null | cut -f1")
+        result&.strip || ""
       end
 
       def resolve_local_path(local_path_param, remote_filename)
