@@ -119,11 +119,11 @@ Shows handle, remote base path, current version, updated-at datetime, and latest
 
 ### Delete
 
-Deletes all versions of a handle, or a specific version with `--version N`. Requires typing the handle name to confirm. Use `--yes` or `-y` to skip confirmation (for scripts).
+Deletes all versions of a handle, or a specific version with `--version N`. Use `--yes` or `-y` to skip confirmation (for scripts).
 
 ### Test
 
-Runs an end-to-end test: creates a temporary file, pushes it, deletes locally, pulls it back, deletes the handle. Prints "Test is OK" or "Test is KO, see the outputs for errors".
+Runs an end-to-end test: creates a temporary file, pushes it, deletes locally, pulls it back, deletes the handle.
 
 ## Testing
 
