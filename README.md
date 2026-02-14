@@ -84,11 +84,11 @@ setfacl -d -m g:filedepot:rwx /data/filedepot
 
 ### Setup
 
-Prompts for store name, type, host, username, base path, and optional public base URL. After writing the config.
+Prompts for store name, type, host, username, base path, and optional public base URL. Then writes the config file .
 
 ### Config
 
-Opens the config file in your editor. After you close the editor.
+Opens the config file in your default editor.
 
 ### Push
 
