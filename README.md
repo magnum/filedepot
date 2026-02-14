@@ -1,5 +1,7 @@
 # Filedepot
 
+[![Gem Version](https://badge.fury.io/rb/filedepot.svg)](https://badge.fury.io/rb/filedepot)
+
 Command-line tool to sync files on remote storage via SSH.
 
 ## Installation
