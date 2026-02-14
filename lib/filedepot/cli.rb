@@ -41,7 +41,7 @@ module Filedepot
           filedepot pull test --version 2
           filedepot pull test --version 2 --path ./test/file.txt
       HELP
-      versions: "Usage: filedepot versions HANDLE\n\nList all versions of a handle. Each version has an integer ID from 1 to n.",
+      versions: "Usage: filedepot versions HANDLE\n\nList all versions of a handle. Each version has an integer ID from 1 to n.\nTo get the list of handles, use: filedepot handles",
       delete: "Usage: filedepot delete HANDLE [VERSION]\n\nAfter confirmation, deletes all versions of a file.\nIf VERSION is specified, deletes only that specific version.",
       info: "Usage: filedepot info HANDLE\n\nShow info for a handle: remote base path and current version.",
       handles: "Usage: filedepot handles\n\nList all handles in storage.",
