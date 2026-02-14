@@ -90,11 +90,11 @@ setfacl -m g:filedepot:rwx /data/filedepot
 
 ### Setup
 
-Prompts for store name, type, host, username, base path, and optional public base URL. After writing the config, asks "Run a test? [y/N]".
+Prompts for store name, type, host, username, base path, and optional public base URL. After writing the config.
 
 ### Config
 
-Opens the config file in your editor. After you close the editor, asks "Run a test? [y/N]".
+Opens the config file in your editor. After you close the editor.
 
 ### Push
 
