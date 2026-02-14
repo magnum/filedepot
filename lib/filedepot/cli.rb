@@ -45,7 +45,8 @@ module Filedepot
       delete: "Usage: filedepot delete HANDLE [--version N]\n\nAfter confirmation, deletes all versions of a file.\nIf --version N is specified, deletes only that specific version.",
       info: "Usage: filedepot info HANDLE\n\nShow info for a handle: remote base path and current version.",
       handles: "Usage: filedepot handles\n\nList all handles in storage.",
-      test: "Usage: filedepot test\n\nRun end-to-end test: push, pull, delete a temporary file."
+      test: "Usage: filedepot test\n\nRun end-to-end test: push, pull, delete a temporary file.",
+      purge: "Usage: filedepot purge HANDLE\n\nShow versions, then prompt how many to keep. Deletes older versions, keeping the newest N."
     }.freeze
 
     desc "test", "Run end-to-end test (push, pull, delete)"
@@ -235,9 +236,13 @@ module Filedepot
       if versions_list.empty?
         puts "Error: Handle '#{handle}' not found."
       else
+        puts "version, datetime, size"
         max_display = 10
         to_show = versions_list.first(max_display)
-        to_show.each { |v, date_str| puts date_str.empty? ? v.to_s : "#{v} - #{date_str}" }
+        to_show.each do |v, date_str, size_str|
+          parts = [v.to_s, date_str, size_str].reject(&:empty?)
+          puts parts.join(", ")
+        end
         if versions_list.size > max_display
           remaining = versions_list.size - max_display
           puts "... and #{remaining} other ones for a total of #{versions_list.size} versions"
@@ -277,12 +282,84 @@ module Filedepot
       return unless store
 
       storage = Storage::Base.for(store)
-      handles = storage.ls
-      if handles.empty?
+      handles_list = storage.handles_data
+      if handles_list.empty?
         puts "No handles found."
       else
-        handles.each { |h| puts h }
+        puts "name, versions, size"
+        handles_list.each do |h|
+          puts [h[:handle], h[:versions_count], h[:size]].join(", ")
+        end
       end
+    end
+
+    desc "purge HANDLE", "Keep only the newest N versions; delete older ones after confirmation"
+    def purge(handle = nil)
+      if handle.nil?
+        puts COMMAND_HELP[:purge]
+        return
+      end
+
+      store = check_config
+      return unless store
+
+      storage = Storage::Base.for(store)
+      versions_list = storage.versions(handle)
+      if versions_list.empty?
+        puts "Error: Handle '#{handle}' not found."
+        return
+      end
+
+      puts "version, datetime, size"
+      versions_list.each do |v, date_str, size_str|
+        parts = [v.to_s, date_str, size_str].reject(&:empty?)
+        puts parts.join(", ")
+      end
+
+      total = versions_list.size
+      begin
+        print "How many versions to keep? [1]: "
+        response = $stdin.gets&.strip
+      rescue Interrupt
+        puts
+        return
+      end
+
+      keep_str = response.empty? ? "1" : response
+      keep_num = keep_str.to_i
+      if keep_num < 1 || keep_str != keep_num.to_s
+        puts "invalid number of versions"
+        return
+      end
+
+      versions_to_delete = total - keep_num
+      if versions_to_delete <= 0
+        puts "Nothing to delete."
+        return
+      end
+
+      begin
+        print "Delete #{versions_to_delete} versions of #{total} total? Type handle name to confirm: "
+        input = $stdin.gets&.strip
+      rescue Interrupt
+        puts
+        return
+      end
+
+      unless input == handle
+        puts "Aborted (handle name did not match)."
+        return
+      end
+
+      version_nums = versions_list.map(&:first)
+      to_delete = version_nums.sort.first(versions_to_delete)
+      to_delete.each do |v|
+        storage.delete(handle, v)
+        puts "Deleted version #{v}"
+      end
+      puts "Purged #{versions_to_delete} versions of #{handle}"
+    rescue RuntimeError => e
+      puts "Error: #{e.message}"
     end
 
     desc "delete HANDLE", "After confirmation, delete all versions of a file; or only a specific version with --version N"
@@ -362,6 +439,7 @@ module Filedepot
       puts "filedepot push HANDLE FILE    Send file to current storage"
       puts "filedepot pull HANDLE [--path PATH] [--version N]  Get file from storage"
       puts "filedepot delete HANDLE [--version N] Delete file(s) after confirmation"
+      puts "filedepot purge HANDLE           Keep newest N versions, delete older"
       puts ""
       puts "Use 'filedepot help COMMAND' for more information on a command."
     end

@@ -49,6 +49,21 @@ stores:
 
 When `default_store` does not match any store name, the first store is used.
 
+## Permissions
+
+On the server, use these commands to set up the folder for filedepot:
+
+```bash
+chmod 2775 /data/condivisa
+setfacl -d -m g:filedepot:rwx /data/filedepot
+```
+
+For existing folders:
+
+```bash
+setfacl -m g:filedepot:rwx /data/filedepot
+```
+
 ## Commands
 
 | Command | Description |
