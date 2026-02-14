@@ -238,7 +238,7 @@ module Filedepot
       end
 
       storage.delete(handle, version)
-      puts "Deleted handle#{handle}#{version ? " version #{version}" : ""}."
+      puts "Deleted handle '#{handle}'#{version ? " version #{version}" : ""}."
     rescue RuntimeError => e
       puts "Error: #{e.message}"
     end
