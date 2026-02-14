@@ -10,7 +10,7 @@ Gem::Specification.new do |spec|
 
   spec.summary       = "Sync files on remote storage"
   spec.description   = "Command-line tool to sync files on remote storage via SSH"
-  spec.homepage      = "https://github.com/filedepot/filedepot"
+  spec.homepage      = "https://github.com/magnum/filedepot"
   spec.license       = "MIT"
   spec.required_ruby_version = ">= 3.0.0"
 
