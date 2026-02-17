@@ -100,16 +100,29 @@ module Filedepot
       first_type = store_types.keys.first
       defaults = store_types[first_type][:config].transform_keys(&:to_s)
 
+      existing_stores = []
+      original_store_name = nil
       if Config.exists?
         config = Config.load
-        stores = config["stores"] || []
-        first_store = stores.first
-        if first_store
-          defaults["name"] = (first_store["name"] || first_store[:name]).to_s
-          defaults["host"] = (first_store["host"] || first_store[:host]).to_s
-          defaults["username"] = (first_store["username"] || first_store[:username]).to_s
-          defaults["base_path"] = (first_store["base_path"] || first_store[:base_path]).to_s
-          defaults["public_base_url"] = (first_store["public_base_url"] || first_store[:public_base_url]).to_s
+        existing_stores = config["stores"] || []
+        default_store_name = config["default_store"]
+        store_to_reconfig = if default_store_name && existing_stores.any?
+          existing_stores.find { |s| (s["name"] || s[:name]) == default_store_name }
+        end
+        store_to_reconfig ||= existing_stores.first
+
+        if store_to_reconfig
+          original_store_name = (store_to_reconfig["name"] || store_to_reconfig[:name]).to_s
+          defaults["name"] = original_store_name
+          defaults["host"] = (store_to_reconfig["host"] || store_to_reconfig[:host]).to_s
+          defaults["username"] = (store_to_reconfig["username"] || store_to_reconfig[:username]).to_s
+          defaults["base_path"] = (store_to_reconfig["base_path"] || store_to_reconfig[:base_path]).to_s
+          defaults["public_base_url"] = (store_to_reconfig["public_base_url"] || store_to_reconfig[:public_base_url]).to_s
+        end
+
+        if existing_stores.size > 1
+          puts "Reconfiguring default store: #{original_store_name} (other stores will be preserved)"
+          puts ""
         end
       end
 
@@ -143,9 +156,16 @@ module Filedepot
         "public_base_url" => (public_base_url.empty? ? nil : public_base_url)
       }.compact
 
+      new_stores = if existing_stores.any?
+        other_stores = existing_stores.reject { |s| (s["name"] || s[:name]) == (original_store_name || name) }
+        [store_hash] + other_stores
+      else
+        [store_hash]
+      end
+
       config = {
         "default_store" => name,
-        "stores" => [store_hash]
+        "stores" => new_stores
       }
 
       FileUtils.mkdir_p(Config::CONFIG_DIR)
